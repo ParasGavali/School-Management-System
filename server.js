@@ -507,21 +507,102 @@ app.get("/api/transactions", requireAuth, async (req, res) => {
   res.json(rows);
 });
 
+function csvEscape(value) {
+  if (value === null || value === undefined) return "";
+  const str = String(value).replace(/"/g, '""');
+  return `"${str}"`;
+}
+
 app.get("/api/export/students.csv", requireAuth, async (req, res) => {
   const students = await studentsCol.find({}).sort({ createdAt: -1 }).toArray();
 
-  let csv =
-    "Student Code,Name,Parent,Phone,Class,Status,Annual Fee,Registration Fee,Discount,Admission Date\n";
+  let csvHeaders = [
+    "Student ID",
+    "Student Code",
+    "First Name",
+    "Last Name",
+    "Full Name",
+    "Father Name",
+    "Mother Name",
+    "Primary Contact",
+    "Alternative Contact",
+    "Aadhar Number",
+    "Address",
+    "Class",
+    "Admission Date",
+    "Annual Fee",
+    "Registration Fee",
+    "Status",
+    "Left Date",
+    "Birth Certificate Submitted",
+    "Aadhar Xerox Submitted",
+    "Payment Transaction ID",
+    "Payment Date",
+    "Payment Mode",
+    "Payment Type",
+    "Payment Note",
+    "Payment Amount",
+    "Entered By",
+    "Created At"
+  ];
+
+  let csv = csvHeaders.map(csvEscape).join(",") + "\n";
 
   for (const s of students) {
-    const name = getFullName(s).replace(/,/g, " ");
-    const parent = (s.parentName || "").replace(/,/g, " ");
-    const phone = (s.phone || "").replace(/,/g, " ");
-    csv += `${s.studentCode},${name},${parent},${phone},${s.className},${s.status},${s.annualFee},${s.registrationFee},${s.discount},${s.admissionDate}\n`;
+    const txns = await transactionsCol
+      .find({ studentId: s._id })
+      .sort({ createdAt: -1 })
+      .toArray();
+
+    const baseStudentData = [
+      String(s._id || ""),
+      s.studentCode || "",
+      s.firstName || "",
+      s.lastName || "",
+      getFullName(s),
+      s.parentName || "",
+      s.motherName || "",
+      s.phone || "",
+      s.altPhone || "",
+      s.aadharNumber || "",
+      s.address || "",
+      s.className || "",
+      s.admissionDate || "",
+      Number(s.annualFee || 10000),
+      Number(s.registrationFee || 0),
+      s.status || "",
+      s.leftDate || "",
+      s.documents?.birthCertificate ? "Yes" : "No",
+      s.documents?.aadharXerox ? "Yes" : "No"
+    ];
+
+    if (txns.length === 0) {
+      const row = [
+        ...baseStudentData,
+        "", "", "", "", "", "", s.createdAt || ""
+      ];
+      csv += row.map(csvEscape).join(",") + "\n";
+    } else {
+      for (const t of txns) {
+        const row = [
+          ...baseStudentData,
+          String(t._id || ""),
+          t.paymentDate || "",
+          t.paymentMode || "",
+          t.paymentType || "",
+          t.note || "",
+          Number(t.amount || 0),
+          t.enteredBy || "",
+          s.createdAt || ""
+        ];
+
+        csv += row.map(csvEscape).join(",") + "\n";
+      }
+    }
   }
 
   res.setHeader("Content-Type", "text/csv");
-  res.setHeader("Content-Disposition", "attachment; filename=students.csv");
+  res.setHeader("Content-Disposition", "attachment; filename=students_full_export.csv");
   res.send(csv);
 });
 

@@ -1,6 +1,7 @@
 const app = document.getElementById("app");
 
 const LOGO_URL = "/logo.png";
+const QR_CODE_URL = "/qrcode.png";
 const SCHOOL_NAME = "First Step PreSchool";
 const PORTAL_TITLE = "School Management Portal";
 const ACADEMIC_YEAR = "Academic Year 2026-2027";
@@ -40,17 +41,12 @@ function initials(name = "") {
   return parts.slice(0, 2).map((p) => p[0].toUpperCase()).join("");
 }
 
-function formatDate(value) {
-  if (!value) return "";
-  return value;
+function getAdmissionNetFee(collectRegistrationFee) {
+  return collectRegistrationFee ? 10200 : 10000;
 }
 
 function getBadgeClass(status) {
   return status === "Left" ? "badge-left" : "badge-active";
-}
-
-function getAdmissionNetFee(collectRegistrationFee) {
-  return collectRegistrationFee ? 10200 : 10000;
 }
 
 function rerenderFeePaymentKeepingFocus(value = "") {
@@ -88,7 +84,6 @@ function setupChartTooltips() {
     });
   });
 }
-
 
 async function api(url, options = {}) {
   const res = await fetch(url, {
@@ -162,32 +157,26 @@ async function loadTransactions() {
 
 function renderLogin(message = "", isError = false) {
   app.innerHTML = `
-    <div class="login-screen">
-      <div class="login-card">
-        <div class="login-card-top">
-          <img src="${LOGO_URL}" alt="School Logo" class="login-logo" />
+    <div class="login-screen-centered">
+      <div class="login-card-centered">
+        <div class="login-card-top-centered">
+          <img src="${LOGO_URL}" alt="School Logo" class="login-logo-centered" />
           <h1>${escapeHtml(SCHOOL_NAME)}</h1>
-          <p>EMR Management System</p>
+          <p>School ERP & Administration Portal</p>
         </div>
 
-        <div class="login-card-body">
+        <div class="login-card-body-centered">
           ${message ? `<div class="message ${isError ? "error" : "success"}">${escapeHtml(message)}</div>` : ""}
 
           <form id="loginForm">
             <div class="field">
               <label>Username</label>
-              <div class="input-icon-wrap">
-                <span class="input-icon">👤</span>
-                <input name="username" placeholder="Enter username" required />
-              </div>
+              <input name="username" placeholder="Enter your username" required />
             </div>
 
             <div class="field">
               <label>Password</label>
-              <div class="input-icon-wrap">
-                <span class="input-icon">🔒</span>
-                <input type="password" name="password" placeholder="Enter password" required />
-              </div>
+              <input type="password" name="password" placeholder="Enter your password" required />
             </div>
 
             <button class="btn btn-primary btn-lg" type="submit">Sign In</button>
@@ -199,7 +188,6 @@ function renderLogin(message = "", isError = false) {
 
   document.getElementById("loginForm").addEventListener("submit", handleLogin);
 }
-
 async function handleLogin(e) {
   e.preventDefault();
   const form = new FormData(e.target);
@@ -327,7 +315,6 @@ function renderAppShell(message = "", isError = false) {
   });
 
   document.getElementById("logoutBtn").addEventListener("click", handleLogout);
-
   bindViewEvents();
 }
 
@@ -358,12 +345,7 @@ function renderDashboardView() {
 
   const d = state.dashboard || {
     totalStudents: 0,
-    classWise: {
-      Playgroup: 0,
-      Nursery: 0,
-      "Jr KG": 0,
-      "Sr KG": 0
-    },
+    classWise: { Playgroup: 0, Nursery: 0, "Jr KG": 0, "Sr KG": 0 },
     totalCollected: 0,
     totalPending: 0,
     recentTransactions: []
@@ -385,7 +367,6 @@ function renderDashboardView() {
   ];
 
   const maxVal = Math.max(...classRows.map((x) => x.value), 1);
-
   const totalFinancial = Number(d.totalCollected || 0) + Number(d.totalPending || 0);
   const collectedPercent = totalFinancial ? (Number(d.totalCollected || 0) / totalFinancial) * 100 : 0;
   const pendingPercent = 100 - collectedPercent;
@@ -403,19 +384,15 @@ function renderDashboardView() {
     </div>
 
     <div class="stats-row five">
-      ${cards
-        .map(
-          (card) => `
-          <div class="stat-box">
-            <div>
-              <div class="stat-label">${card.label}</div>
-              <div class="stat-value">${card.value}</div>
-            </div>
-            <div class="stat-icon ${card.color}">${card.icon}</div>
+      ${cards.map((card) => `
+        <div class="stat-box">
+          <div>
+            <div class="stat-label">${card.label}</div>
+            <div class="stat-value">${card.value}</div>
           </div>
-        `
-        )
-        .join("")}
+          <div class="stat-icon ${card.color}">${card.icon}</div>
+        </div>
+      `).join("")}
     </div>
 
     <div class="dashboard-grid">
@@ -424,22 +401,15 @@ function renderDashboardView() {
         <div class="bar-chart">
           <div class="chart-grid-lines"></div>
           <div class="chart-bars">
-            ${classRows
-              .map(
-                (row) => `
-                <div
-                  class="bar-col"
-                  data-chart-tooltip="${row.label}: ${row.value} student${row.value === 1 ? "" : "s"}"
-                >
-                  <div class="bar-value-label">${row.value}</div>
-                  <div class="bar-track">
-                    <div class="bar-fill" style="height:${(row.value / maxVal) * 100}%"></div>
-                  </div>
-                  <div class="bar-label">${row.label}</div>
+            ${classRows.map((row) => `
+              <div class="bar-col" data-chart-tooltip="${row.label}: ${row.value} student${row.value === 1 ? "" : "s"}">
+                <div class="bar-value-label">${row.value}</div>
+                <div class="bar-track">
+                  <div class="bar-fill" style="height:${(row.value / maxVal) * 100}%"></div>
                 </div>
-              `
-              )
-              .join("")}
+                <div class="bar-label">${row.label}</div>
+              </div>
+            `).join("")}
           </div>
         </div>
       </div>
@@ -458,21 +428,11 @@ function renderDashboardView() {
 
         <div class="donut-section">
           <svg class="interactive-donut" viewBox="0 0 42 42">
-            <circle
-              class="donut-bg-ring"
-              cx="21"
-              cy="21"
-              r="15.915"
-              fill="transparent"
-              stroke="#edf2f7"
-              stroke-width="5"
-            ></circle>
+            <circle class="donut-bg-ring" cx="21" cy="21" r="15.915" fill="transparent" stroke="#edf2f7" stroke-width="5"></circle>
 
             <circle
               class="donut-segment collected-segment"
-              cx="21"
-              cy="21"
-              r="15.915"
+              cx="21" cy="21" r="15.915"
               fill="transparent"
               stroke="#19c38a"
               stroke-width="5"
@@ -483,9 +443,7 @@ function renderDashboardView() {
 
             <circle
               class="donut-segment pending-segment"
-              cx="21"
-              cy="21"
-              r="15.915"
+              cx="21" cy="21" r="15.915"
               fill="transparent"
               stroke="#ff3b5f"
               stroke-width="5"
@@ -509,7 +467,6 @@ function renderDashboardView() {
 
     <div class="panel-card mt-22">
       <div class="panel-title">Recent Transactions</div>
-
       <div class="table-wrap">
         <table class="modern-table">
           <thead>
@@ -525,20 +482,16 @@ function renderDashboardView() {
           <tbody>
             ${
               recent.length
-                ? recent
-                    .map(
-                      (t) => `
-                      <tr>
-                        <td>${escapeHtml(t.id || "")}</td>
-                        <td>${escapeHtml(t.paymentDate || "")}</td>
-                        <td class="amount-positive">+ ${money(t.amount).replace("₹", "₹")}</td>
-                        <td><span class="mode-pill">${escapeHtml(t.paymentMode || "-")}</span></td>
-                        <td>${escapeHtml(t.paymentType || "Tuition")}</td>
-                        <td>${escapeHtml(t.enteredBy || "Admin")}</td>
-                      </tr>
-                    `
-                    )
-                    .join("")
+                ? recent.map((t) => `
+                  <tr>
+                    <td>${escapeHtml(t.id || "")}</td>
+                    <td>${escapeHtml(t.paymentDate || "")}</td>
+                    <td class="amount-positive">+ ${money(t.amount)}</td>
+                    <td><span class="mode-pill">${escapeHtml(t.paymentMode || "-")}</span></td>
+                    <td>${escapeHtml(t.paymentType || "Tuition")}</td>
+                    <td>${escapeHtml(t.enteredBy || "Admin")}</td>
+                  </tr>
+                `).join("")
                 : `<tr><td colspan="6" class="empty-row">No transactions available</td></tr>`
             }
           </tbody>
@@ -547,6 +500,7 @@ function renderDashboardView() {
     </div>
   `;
 }
+
 function getFilteredStudents() {
   const search = state.studentSearch.toLowerCase().trim();
 
@@ -557,11 +511,8 @@ function getFilteredStudents() {
       (s.fullName || "").toLowerCase().includes(search) ||
       (s.parentName || "").toLowerCase().includes(search);
 
-    const matchesClass =
-      !state.studentClassFilter || s.className === state.studentClassFilter;
-
-    const matchesStatus =
-      !state.studentStatusFilter || s.status === state.studentStatusFilter;
+    const matchesClass = !state.studentClassFilter || s.className === state.studentClassFilter;
+    const matchesStatus = !state.studentStatusFilter || s.status === state.studentStatusFilter;
 
     return matchesSearch && matchesClass && matchesStatus;
   });
@@ -569,6 +520,7 @@ function getFilteredStudents() {
 
 function renderStudentsView() {
   const filtered = getFilteredStudents();
+  const isTeacher = state.user?.role === "Teacher";
 
   return `
     <div class="page-head row-between">
@@ -578,12 +530,8 @@ function renderStudentsView() {
       </div>
 
       <div class="head-actions">
-        <a class="btn btn-light" href="/api/export/students.csv">Export to Excel</a>
-        ${
-          state.user?.role === "Admin" || state.user?.role === "Teacher"
-            ? `<button class="btn btn-primary" id="goAdmissionBtn">+ Add New Student</button>`
-            : ""
-        }
+        ${state.user?.role === "Admin" ? `<a class="btn btn-light" href="/api/export/students.csv">Export to Excel</a>` : ""}
+        <button class="btn btn-primary" id="goAdmissionBtn">+ Add New Student</button>
       </div>
     </div>
 
@@ -617,39 +565,39 @@ function renderStudentsView() {
               <th>Name</th>
               <th>Class</th>
               <th>Parent</th>
-              <th>Pending Fee</th>
+              ${!isTeacher ? "<th>Pending Fee</th>" : ""}
               <th>Actions</th>
             </tr>
           </thead>
           <tbody>
             ${
               filtered.length
-                ? filtered
-                    .map(
-                      (s) => `
-                      <tr>
-                        <td class="linkish">${escapeHtml(s.studentCode)}</td>
-                        <td><strong>${escapeHtml(s.fullName)}</strong></td>
-                        <td><span class="class-pill">${escapeHtml(s.className)}</span></td>
-                        <td>${escapeHtml(s.parentName || "")}</td>
-                        <td class="${Number(s.pending || 0) > 0 ? "pending-red" : "paid-green"}">
-                          ${Number(s.pending || 0) > 0 ? money(s.pending) : "Paid"}
-                        </td>
-                        <td>
-                          <div class="row-actions">
-                            <button class="icon-action-btn view-btn" data-id="${s.id}" title="Edit / View">✎</button>
-                            ${
-                              state.user?.role === "Admin"
-                                ? `<button class="icon-action-btn fee-btn" data-fee-id="${s.id}" title="Pay Fees">₹</button>`
-                                : ""
-                            }
-                          </div>
-                        </td>
-                      </tr>
-                    `
-                    )
-                    .join("")
-                : `<tr><td colspan="6" class="empty-row">No students found</td></tr>`
+                ? filtered.map((s) => `
+                  <tr>
+                    <td class="linkish">${escapeHtml(s.studentCode)}</td>
+                    <td><strong>${escapeHtml(s.fullName)}</strong></td>
+                    <td><span class="class-pill">${escapeHtml(s.className)}</span></td>
+                    <td>${escapeHtml(s.parentName || "")}</td>
+                    ${
+                      !isTeacher
+                        ? `<td class="${Number(s.pending || 0) > 0 ? "pending-red" : "paid-green"}">
+                            ${Number(s.pending || 0) > 0 ? money(s.pending) : "Paid"}
+                           </td>`
+                        : ""
+                    }
+                    <td>
+                      <div class="row-actions">
+                        <button class="icon-action-btn view-btn" data-id="${s.id}" title="Edit / View">✎</button>
+                        ${
+                          state.user?.role === "Admin"
+                            ? `<button class="icon-action-btn fee-btn" data-fee-id="${s.id}" title="Pay Fees">₹</button>`
+                            : ""
+                        }
+                      </div>
+                    </td>
+                  </tr>
+                `).join("")
+                : `<tr><td colspan="${!isTeacher ? 6 : 5}" class="empty-row">No students found</td></tr>`
             }
           </tbody>
         </table>
@@ -798,8 +746,10 @@ function renderAdmissionView() {
     </div>
   `;
 }
+
 function renderProfileView() {
   const s = state.currentStudent;
+  const isTeacher = state.user?.role === "Teacher";
 
   if (!s) {
     return `<div class="panel-card"><div class="empty-row">No student selected</div></div>`;
@@ -809,7 +759,7 @@ function renderProfileView() {
     <div class="page-head row-between">
       <div>
         <h1 class="page-title">Student Profile</h1>
-        <p class="page-subtitle">Update student information and view payment history.</p>
+        <p class="page-subtitle">Update student information and view student profile.</p>
       </div>
       <div class="head-actions">
         <button class="btn btn-light" id="backStudentsBtn">Back</button>
@@ -826,12 +776,25 @@ function renderProfileView() {
         </div>
 
         <div class="student-summary-list">
-          <div><span>Net Total Fee</span><strong>${money(s.totalFee)}</strong></div>
-          <div><span>Registration</span><strong>${Number(s.registrationFee || 0) > 0 ? money(s.registrationFee) : "Waived"}</strong></div>
-          <div><span>Paid So Far</span><strong class="paid-green">${money(s.paid)}</strong></div>
-          <div><span>Pending Due</span><strong class="pending-red">${money(s.pending)}</strong></div>
+          <div><span>Father's Name</span><strong>${escapeHtml(s.parentName || "")}</strong></div>
+          <div><span>Mother's Name</span><strong>${escapeHtml(s.motherName || "-")}</strong></div>
+          <div><span>Phone</span><strong>${escapeHtml(s.phone || "-")}</strong></div>
+          <div><span>Aadhar</span><strong>${escapeHtml(s.aadharNumber || "-")}</strong></div>
           <div><span>Status</span><strong>${escapeHtml(s.status)}</strong></div>
         </div>
+
+        ${
+          !isTeacher
+            ? `
+            <div class="student-summary-list mt-22">
+              <div><span>Net Total Fee</span><strong>${money(s.totalFee)}</strong></div>
+              <div><span>Registration</span><strong>${Number(s.registrationFee || 0) > 0 ? money(s.registrationFee) : "Waived"}</strong></div>
+              <div><span>Paid So Far</span><strong class="paid-green">${money(s.paid)}</strong></div>
+              <div><span>Pending Due</span><strong class="pending-red">${money(s.pending)}</strong></div>
+            </div>
+          `
+            : ""
+        }
 
         ${
           state.user?.role === "Admin"
@@ -874,17 +837,26 @@ function renderProfileView() {
           </div>
 
           <div class="field">
-            <label>Parent Name</label>
+            <label>Father's Name</label>
             <input name="parentName" value="${escapeHtml(s.parentName || "")}" required />
           </div>
           <div class="field">
-            <label>Phone</label>
-            <input name="phone" value="${escapeHtml(s.phone || "")}" />
+            <label>Mother's Name</label>
+            <input name="motherName" value="${escapeHtml(s.motherName || "")}" />
           </div>
 
-          <div class="field full">
-            <label>Address</label>
-            <textarea name="address" rows="3">${escapeHtml(s.address || "")}</textarea>
+          <div class="field">
+            <label>Primary Contact</label>
+            <input name="phone" value="${escapeHtml(s.phone || "")}" />
+          </div>
+          <div class="field">
+            <label>Alternative Contact</label>
+            <input name="altPhone" value="${escapeHtml(s.altPhone || "")}" />
+          </div>
+
+          <div class="field">
+            <label>Aadhar Number</label>
+            <input name="aadharNumber" value="${escapeHtml(s.aadharNumber || "")}" />
           </div>
 
           <div class="field">
@@ -897,6 +869,11 @@ function renderProfileView() {
             </select>
           </div>
 
+          <div class="field full">
+            <label>Address</label>
+            <textarea name="address" rows="3">${escapeHtml(s.address || "")}</textarea>
+          </div>
+
           <div class="field">
             <label>Admission Date</label>
             <input type="date" name="admissionDate" value="${escapeHtml(s.admissionDate || "")}" required />
@@ -904,12 +881,21 @@ function renderProfileView() {
 
           <div class="field">
             <label>Registration Fee</label>
-            <input type="number" name="registrationFee" value="${escapeHtml(s.registrationFee || 0)}" />
+            <input type="number" name="registrationFee" value="${escapeHtml(s.registrationFee || 0)}" ${isTeacher ? "readonly" : ""} />
           </div>
 
-          <div class="field">
-            <label>Discount</label>
-            <input type="number" name="discount" value="${escapeHtml(s.discount || 0)}" />
+          <div class="field full">
+            <label>Documents Submitted</label>
+            <div class="doc-grid">
+              <label class="check-line">
+                <input type="checkbox" name="birthCertificate" ${s.documents?.birthCertificate ? "checked" : ""} />
+                <span>Birth Certificate</span>
+              </label>
+              <label class="check-line">
+                <input type="checkbox" name="aadharXerox" ${s.documents?.aadharXerox ? "checked" : ""} />
+                <span>Aadhar Card Xerox</span>
+              </label>
+            </div>
           </div>
 
           <div class="full">
@@ -919,39 +905,41 @@ function renderProfileView() {
       </div>
     </div>
 
-    <div class="panel-card mt-22">
-      <div class="panel-title">Previous Payments</div>
-      <div class="table-wrap">
-        <table class="modern-table">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Amount</th>
-              <th>Mode</th>
-              <th>Note</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${
-              state.currentTransactions.length
-                ? state.currentTransactions
-                    .map(
-                      (t) => `
+    ${
+      !isTeacher
+        ? `
+        <div class="panel-card mt-22">
+          <div class="panel-title">Previous Payments</div>
+          <div class="table-wrap">
+            <table class="modern-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Amount</th>
+                  <th>Mode</th>
+                  <th>Type</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${
+                  state.currentTransactions.length
+                    ? state.currentTransactions.map((t) => `
                       <tr>
                         <td>${escapeHtml(t.paymentDate || "")}</td>
                         <td class="amount-positive">+ ${money(t.amount)}</td>
                         <td><span class="mode-pill">${escapeHtml(t.paymentMode || "")}</span></td>
-                        <td>${escapeHtml(t.note || "-")}</td>
+                        <td>${escapeHtml(t.paymentType || t.note || "-")}</td>
                       </tr>
-                    `
-                    )
-                    .join("")
-                : `<tr><td colspan="4" class="empty-row">No transactions yet</td></tr>`
-            }
-          </tbody>
-        </table>
-      </div>
-    </div>
+                    `).join("")
+                    : `<tr><td colspan="4" class="empty-row">No transactions yet</td></tr>`
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `
+        : ""
+    }
   `;
 }
 
@@ -991,6 +979,23 @@ function renderFeePaymentView() {
         <p class="page-subtitle">Secure portal for collecting student fees.</p>
       </div>
     </div>
+
+    ${
+  !s
+    ? `
+    <div class="panel-card qr-panel qr-panel-centered">
+      <div class="panel-title qr-main-title">Scan QR to Receive Payment</div>
+      <div class="page-subtitle qr-main-subtitle">
+        Collect the payment first, then search the student and record the transaction.
+      </div>
+
+      <div class="qr-big-wrap">
+        <img src="${QR_CODE_URL}" alt="Payment QR Code" class="qr-big-image" />
+      </div>
+    </div>
+  `
+    : ""
+}
 
     <div class="search-panel fee-search-panel">
       <div class="search-box wide fee-search-wrap">
@@ -1034,9 +1039,8 @@ function renderFeePaymentView() {
               </div>
 
               <div class="student-summary-list">
-                <div><span>Plan</span><strong>Full Payment (1 Installment)</strong></div>
                 <div><span>Net Total Fee</span><strong>${money(s.totalFee || 10000)}</strong></div>
-                <div><span>Registration</span><strong>${Number(s.registrationFee || 0) > 0 ? "Paid / Applicable" : "Waived"}</strong></div>
+                <div><span>Registration</span><strong>${Number(s.registrationFee || 0) > 0 ? "Applicable" : "Waived"}</strong></div>
                 <div><span>Paid So Far</span><strong class="paid-green">${money(s.paid || 0)}</strong></div>
                 <div><span>Pending Due</span><strong class="pending-red">${money(s.pending || 0)}</strong></div>
               </div>
@@ -1055,7 +1059,7 @@ function renderFeePaymentView() {
                               <div class="mini-pay-amount">${money(t.amount)}</div>
                               <div class="mini-pay-meta">${escapeHtml(t.paymentDate || "")} • ${escapeHtml(t.paymentMode || "")}</div>
                             </div>
-                            <span class="mode-pill">${escapeHtml(t.note || "Fee")}</span>
+                            <span class="mode-pill">${escapeHtml(t.paymentType || t.note || "Fee")}</span>
                           </div>
                         `
                         )
@@ -1092,8 +1096,12 @@ function renderFeePaymentView() {
               </div>
 
               <div class="field">
-                <label>Note</label>
-                <input name="note" placeholder="Tuition / Registration / Installment..." ${Number(s.pending || 0) <= 0 ? "disabled" : ""} />
+                <label>Payment Type</label>
+                <div class="payment-type-grid">
+                  <label class="mode-option"><input type="radio" name="paymentType" value="Registration Fee" checked /> <span>Registration Fee</span></label>
+                  <label class="mode-option"><input type="radio" name="paymentType" value="Tuition Fee" /> <span>Tuition Fee</span></label>
+                  <label class="mode-option"><input type="radio" name="paymentType" value="Other" /> <span>Other</span></label>
+                </div>
               </div>
 
               <button class="btn ${Number(s.pending || 0) <= 0 ? "btn-disabled" : "btn-primary"} btn-lg" type="submit" ${Number(s.pending || 0) <= 0 ? "disabled" : ""}>
@@ -1156,22 +1164,18 @@ function renderReportsView() {
               <tbody>
                 ${
                   state.transactions.length
-                    ? state.transactions
-                        .map(
-                          (t) => `
-                          <tr>
-                            <td>${escapeHtml(t.paymentDate || "")}</td>
-                            <td class="small-muted">${escapeHtml(t.id || "")}</td>
-                            <td><strong>${escapeHtml(t.studentName || "")}</strong></td>
-                            <td>${escapeHtml(t.className || "-")}</td>
-                            <td><span class="class-pill">${escapeHtml(t.paymentType || "Tuition")}</span></td>
-                            <td>${escapeHtml(t.paymentMode || "")}</td>
-                            <td class="amount-positive">+ ${money(t.amount)}</td>
-                          </tr>
-                        `
-                        )
-                        .join("")
-                    : `<tr><td colspan="7" class="empty-row">Add the /api/transactions route in server.js to show the full ledger.</td></tr>`
+                    ? state.transactions.map((t) => `
+                      <tr>
+                        <td>${escapeHtml(t.paymentDate || "")}</td>
+                        <td class="small-muted">${escapeHtml(t.id || "")}</td>
+                        <td><strong>${escapeHtml(t.studentName || "")}</strong></td>
+                        <td>${escapeHtml(t.className || "-")}</td>
+                        <td><span class="class-pill">${escapeHtml(t.paymentType || "Tuition")}</span></td>
+                        <td>${escapeHtml(t.paymentMode || "")}</td>
+                        <td class="amount-positive">+ ${money(t.amount)}</td>
+                      </tr>
+                    `).join("")
+                    : `<tr><td colspan="7" class="empty-row">No transactions found</td></tr>`
                 }
               </tbody>
             </table>
@@ -1191,20 +1195,16 @@ function renderReportsView() {
               <tbody>
                 ${
                   pendingStudents.length
-                    ? pendingStudents
-                        .map(
-                          (s) => `
-                          <tr>
-                            <td>${escapeHtml(s.studentCode || "")}</td>
-                            <td><strong>${escapeHtml(s.fullName || "")}</strong></td>
-                            <td>${escapeHtml(s.className || "")}</td>
-                            <td>${escapeHtml(s.parentName || "")}</td>
-                            <td>${money(s.paid || 0)}</td>
-                            <td class="pending-red">${money(s.pending || 0)}</td>
-                          </tr>
-                        `
-                        )
-                        .join("")
+                    ? pendingStudents.map((s) => `
+                      <tr>
+                        <td>${escapeHtml(s.studentCode || "")}</td>
+                        <td><strong>${escapeHtml(s.fullName || "")}</strong></td>
+                        <td>${escapeHtml(s.className || "")}</td>
+                        <td>${escapeHtml(s.parentName || "")}</td>
+                        <td>${money(s.paid || 0)}</td>
+                        <td class="pending-red">${money(s.pending || 0)}</td>
+                      </tr>
+                    `).join("")
                     : `<tr><td colspan="6" class="empty-row">No pending fees</td></tr>`
                 }
               </tbody>
@@ -1292,7 +1292,6 @@ function bindViewEvents() {
       const updateNetFee = () => {
         netFeeAmount.textContent = money(getAdmissionNetFee(regCheckbox.checked));
       };
-
       regCheckbox.addEventListener("change", updateNetFee);
       updateNetFee();
     }
@@ -1306,14 +1305,8 @@ function bindViewEvents() {
     const goFeeBtn = document.getElementById("goFeeFromProfileBtn");
 
     if (editForm) editForm.addEventListener("submit", handleEditStudent);
-
-    if (markLeftBtn) {
-      markLeftBtn.addEventListener("click", handleMarkLeft);
-    }
-
-    if (deleteBtn) {
-      deleteBtn.addEventListener("click", handleDeleteStudent);
-    }
+    if (markLeftBtn) markLeftBtn.addEventListener("click", handleMarkLeft);
+    if (deleteBtn) deleteBtn.addEventListener("click", handleDeleteStudent);
 
     if (backBtn) {
       backBtn.addEventListener("click", async () => {
@@ -1416,12 +1409,18 @@ async function handleAdmissionSubmit(e) {
         dob: form.get("dob"),
         gender: form.get("gender"),
         parentName: form.get("parentName"),
+        motherName: form.get("motherName"),
         phone: form.get("phone"),
+        altPhone: form.get("altPhone"),
+        aadharNumber: form.get("aadharNumber"),
         address: addressParts,
         className: form.get("className"),
         admissionDate: form.get("admissionDate"),
         registrationFee,
-        discount: 0
+        documents: {
+          birthCertificate: !!form.get("birthCertificate"),
+          aadharXerox: !!form.get("aadharXerox")
+        }
       })
     });
 
@@ -1434,6 +1433,7 @@ async function handleAdmissionSubmit(e) {
     renderAppShell(err.message, true);
   }
 }
+
 async function handleEditStudent(e) {
   e.preventDefault();
   const form = new FormData(e.target);
@@ -1447,12 +1447,18 @@ async function handleEditStudent(e) {
         dob: form.get("dob"),
         gender: form.get("gender"),
         parentName: form.get("parentName"),
+        motherName: form.get("motherName"),
         phone: form.get("phone"),
+        altPhone: form.get("altPhone"),
+        aadharNumber: form.get("aadharNumber"),
         address: form.get("address"),
         className: form.get("className"),
         admissionDate: form.get("admissionDate"),
         registrationFee: form.get("registrationFee"),
-        discount: form.get("discount")
+        documents: {
+          birthCertificate: !!form.get("birthCertificate"),
+          aadharXerox: !!form.get("aadharXerox")
+        }
       })
     });
 
@@ -1482,7 +1488,7 @@ async function handleAddPayment(e) {
       body: JSON.stringify({
         amount: form.get("amount"),
         paymentMode: form.get("paymentMode"),
-        note: form.get("note"),
+        paymentType: form.get("paymentType"),
         paymentDate: form.get("paymentDate")
       })
     });
