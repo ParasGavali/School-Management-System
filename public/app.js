@@ -642,7 +642,7 @@ function renderAdmissionView() {
           </div>
           <div class="field">
             <label>Aadhar Number</label>
-            <input name="aadharNumber" placeholder="12 digit number" />
+            <input name="aadharNumber" maxlength="12" inputmode="numeric" pattern="[0-9]{12}" placeholder="12 digit number" />
           </div>
           <div class="field"></div>
         </div>
@@ -660,11 +660,11 @@ function renderAdmissionView() {
 
           <div class="field">
             <label>Primary Contact</label>
-            <input name="phone" />
+            <input name="phone" maxlength="10" inputmode="numeric" pattern="[0-9]{10}" />
           </div>
           <div class="field">
             <label>Alternative Contact</label>
-            <input name="altPhone" />
+            <input name="altPhone" maxlength="10" inputmode="numeric" pattern="[0-9]{10}" />
           </div>
 
           <div class="field full">
@@ -980,22 +980,7 @@ function renderFeePaymentView() {
       </div>
     </div>
 
-    ${
-  !s
-    ? `
-    <div class="panel-card qr-panel qr-panel-centered">
-      <div class="panel-title qr-main-title">Scan QR to Receive Payment</div>
-      <div class="page-subtitle qr-main-subtitle">
-        Collect the payment first, then search the student and record the transaction.
-      </div>
-
-      <div class="qr-big-wrap">
-        <img src="${QR_CODE_URL}" alt="Payment QR Code" class="qr-big-image" />
-      </div>
-    </div>
-  `
-    : ""
-}
+    
 
     <div class="search-panel fee-search-panel">
       <div class="search-box wide fee-search-wrap">
@@ -1024,6 +1009,22 @@ function renderFeePaymentView() {
 
       <button class="btn btn-primary" id="findStudentBtn" type="button">Find Student</button>
     </div>
+    ${
+  !s
+    ? `
+    <div class="panel-card qr-panel qr-panel-centered">
+      <div class="panel-title qr-main-title">Scan QR to Receive Payment</div>
+      <div class="page-subtitle qr-main-subtitle">
+        Collect the payment first, then search the student and record the transaction.
+      </div>
+
+      <div class="qr-big-wrap">
+        <img src="${QR_CODE_URL}" alt="Payment QR Code" class="qr-big-image" />
+      </div>
+    </div>
+  `
+    : ""
+}   
 
     ${
       s

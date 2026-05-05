@@ -230,22 +230,30 @@ app.get("/api/students", requireAuth, async (req, res) => {
     const pending = s.status === "Active" ? Math.max(studentTotalFee(s) - paid, 0) : 0;
 
     result.push({
-      id: String(s._id),
-      studentCode: s.studentCode,
-      firstName: s.firstName,
-      lastName: s.lastName || "",
-      fullName: getFullName(s),
-      parentName: s.parentName,
-      phone: s.phone || "",
-      className: s.className,
-      status: s.status,
-      admissionDate: s.admissionDate,
-      annualFee: s.annualFee,
-      registrationFee: s.registrationFee,
-      discount: s.discount,
-      paid,
-      pending
-    });
+  id: String(s._id),
+  studentCode: s.studentCode,
+  firstName: s.firstName,
+  lastName: s.lastName || "",
+  fullName: getFullName(s),
+  parentName: s.parentName,
+  motherName: s.motherName || "",
+  phone: s.phone || "",
+  altPhone: s.altPhone || "",
+  aadharNumber: s.aadharNumber || "",
+  address: s.address || "",
+  className: s.className,
+  status: s.status,
+  admissionDate: s.admissionDate,
+  annualFee: s.annualFee,
+  registrationFee: s.registrationFee,
+  discount: s.discount,
+  paid,
+  pending,
+  documents: {
+    birthCertificate: !!s.documents?.birthCertificate,
+    aadharXerox: !!s.documents?.aadharXerox
+  }
+});
   }
 
   res.json(result);
@@ -264,36 +272,47 @@ app.get("/api/students/:id", requireAuth, async (req, res) => {
     .toArray();
 
   const paid = await getStudentPaid(id);
-  const pending = student.status === "Active" ? Math.max(studentTotalFee(student) - paid, 0) : 0;
+  const pending =
+    student.status === "Active"
+      ? Math.max(studentTotalFee(student) - paid, 0)
+      : 0;
 
   res.json({
     student: {
       id: String(student._id),
       studentCode: student.studentCode,
-      firstName: student.firstName,
+      firstName: student.firstName || "",
       lastName: student.lastName || "",
       dob: student.dob || "",
       gender: student.gender || "",
-      parentName: student.parentName,
+      parentName: student.parentName || "",
+      motherName: student.motherName || "",
       phone: student.phone || "",
+      altPhone: student.altPhone || "",
+      aadharNumber: student.aadharNumber || "",
       address: student.address || "",
-      className: student.className,
-      admissionDate: student.admissionDate,
-      annualFee: student.annualFee,
-      registrationFee: student.registrationFee,
-      discount: student.discount,
-      status: student.status,
+      className: student.className || "",
+      admissionDate: student.admissionDate || "",
+      annualFee: Number(student.annualFee || 10000),
+      registrationFee: Number(student.registrationFee || 0),
+      status: student.status || "Active",
       leftDate: student.leftDate || "",
+      documents: {
+        birthCertificate: !!student.documents?.birthCertificate,
+        aadharXerox: !!student.documents?.aadharXerox
+      },
       totalFee: studentTotalFee(student),
       paid,
       pending
     },
     transactions: transactions.map((t) => ({
       id: String(t._id),
-      amount: t.amount,
-      paymentMode: t.paymentMode,
+      amount: Number(t.amount || 0),
+      paymentMode: t.paymentMode || "",
+      paymentType: t.paymentType || t.note || "",
       note: t.note || "",
-      paymentDate: t.paymentDate
+      paymentDate: t.paymentDate || "",
+      enteredBy: t.enteredBy || ""
     }))
   });
 });
@@ -305,36 +324,61 @@ app.post("/api/students", requireAuth, async (req, res) => {
     dob,
     gender,
     parentName,
+    motherName,
     phone,
+    altPhone,
+    aadharNumber,
     address,
     className,
     admissionDate,
     registrationFee,
-    discount
+    documents
   } = req.body;
+
+  const cleanPhone = String(phone || "").trim();
+  const cleanAltPhone = String(altPhone || "").trim();
+  const cleanAadhar = String(aadharNumber || "").trim();
 
   if (!firstName || !parentName || !className || !admissionDate) {
     return res.status(400).json({ message: "Required fields missing" });
+  }
+
+  if (cleanPhone && !/^\d{10}$/.test(cleanPhone)) {
+    return res.status(400).json({ message: "Primary contact must be exactly 10 digits" });
+  }
+
+  if (cleanAltPhone && !/^\d{10}$/.test(cleanAltPhone)) {
+    return res.status(400).json({ message: "Alternative contact must be exactly 10 digits" });
+  }
+
+  if (cleanAadhar && !/^\d{12}$/.test(cleanAadhar)) {
+    return res.status(400).json({ message: "Aadhar number must be exactly 12 digits" });
   }
 
   const studentCode = await generateStudentCode(className, admissionDate);
 
   const student = {
     studentCode,
-    firstName,
+    firstName: firstName || "",
     lastName: lastName || "",
     dob: dob || "",
     gender: gender || "",
-    parentName,
-    phone: phone || "",
+    parentName: parentName || "",
+    motherName: motherName || "",
+    phone: cleanPhone,
+    altPhone: cleanAltPhone,
+    aadharNumber: cleanAadhar,
     address: address || "",
     className,
     admissionDate,
     annualFee: ANNUAL_FEE,
     registrationFee: Number(registrationFee || DEFAULT_REGISTRATION_FEE),
-    discount: Number(discount || 0),
     status: "Active",
     leftDate: "",
+    documents: {
+      birthCertificate: !!documents?.birthCertificate,
+      aadharXerox: !!documents?.aadharXerox
+    },
     createdAt: new Date(),
     updatedAt: new Date()
   };
@@ -347,7 +391,6 @@ app.post("/api/students", requireAuth, async (req, res) => {
     studentCode
   });
 });
-
 app.put("/api/students/:id", requireAuth, async (req, res) => {
   const id = toObjectId(req.params.id);
   if (!id) return res.status(400).json({ message: "Invalid ID" });
@@ -358,36 +401,74 @@ app.put("/api/students/:id", requireAuth, async (req, res) => {
     dob,
     gender,
     parentName,
+    motherName,
     phone,
+    altPhone,
+    aadharNumber,
     address,
     className,
     admissionDate,
     registrationFee,
-    discount
+    documents
   } = req.body;
 
-  await studentsCol.updateOne(
+  const cleanPhone = String(phone || "").trim();
+  const cleanAltPhone = String(altPhone || "").trim();
+  const cleanAadhar = String(aadharNumber || "").trim();
+
+  if (!firstName || !parentName || !className || !admissionDate) {
+    return res.status(400).json({ message: "Required fields are missing" });
+  }
+
+  if (cleanPhone && !/^\d{10}$/.test(cleanPhone)) {
+    return res.status(400).json({ message: "Primary contact must be exactly 10 digits" });
+  }
+
+  if (cleanAltPhone && !/^\d{10}$/.test(cleanAltPhone)) {
+    return res.status(400).json({ message: "Alternative contact must be exactly 10 digits" });
+  }
+
+  if (cleanAadhar && !/^\d{12}$/.test(cleanAadhar)) {
+    return res.status(400).json({ message: "Aadhar number must be exactly 12 digits" });
+  }
+
+  const result = await studentsCol.updateOne(
     { _id: id },
     {
       $set: {
-        firstName,
+        firstName: firstName || "",
         lastName: lastName || "",
         dob: dob || "",
         gender: gender || "",
-        parentName,
-        phone: phone || "",
+        parentName: parentName || "",
+        motherName: motherName || "",
+        phone: cleanPhone,
+        altPhone: cleanAltPhone,
+        aadharNumber: cleanAadhar,
         address: address || "",
-        className,
-        admissionDate,
+        className: className || "",
+        admissionDate: admissionDate || "",
         registrationFee: Number(registrationFee || 0),
-        discount: Number(discount || 0),
+        documents: {
+          birthCertificate: !!documents?.birthCertificate,
+          aadharXerox: !!documents?.aadharXerox
+        },
         updatedAt: new Date()
       }
     }
   );
 
-  res.json({ success: true });
+  if (result.matchedCount === 0) {
+    return res.status(404).json({ message: "Student not found" });
+  }
+
+  if (result.modifiedCount === 0) {
+    return res.json({ success: true, message: "No changes detected" });
+  }
+
+  res.json({ success: true, message: "Student updated successfully" });
 });
+
 
 app.put("/api/students/:id/leave", requireAdmin, async (req, res) => {
   const id = toObjectId(req.params.id);
@@ -428,7 +509,7 @@ app.post("/api/students/:id/payments", requireAdmin, async (req, res) => {
     return res.status(400).json({ message: "Cannot collect fee for left student" });
   }
 
-  const { amount, paymentMode, note, paymentDate } = req.body;
+  const { amount, paymentMode, paymentType, note, paymentDate } = req.body;
   const numAmount = Number(amount || 0);
 
   if (numAmount <= 0) {
@@ -448,8 +529,10 @@ app.post("/api/students/:id/payments", requireAdmin, async (req, res) => {
     studentName: getFullName(student),
     amount: numAmount,
     paymentMode: paymentMode || "Cash",
+    paymentType: paymentType || "Tuition Fee",
     note: note || "",
     paymentDate: paymentDate || new Date().toISOString().split("T")[0],
+    enteredBy: req.session.user?.name || req.session.user?.username || "Admin",
     createdAt: new Date()
   });
 
@@ -485,24 +568,23 @@ app.get("/api/transactions", requireAuth, async (req, res) => {
   const studentMap = new Map(studentDocs.map((s) => [String(s._id), s]));
 
   const rows = txns.map((t) => {
-    const student = studentMap.get(String(t.studentId));
+  const student = studentMap.get(String(t.studentId));
 
-    return {
-      id: String(t._id),
-      studentId: String(t.studentId),
-      studentCode: t.studentCode || student?.studentCode || "",
-      studentName: t.studentName || getFullName(student || {}),
-      className: student?.className || "",
-      amount: Number(t.amount || 0),
-      paymentMode: t.paymentMode || "",
-      note: t.note || "",
-      paymentDate: t.paymentDate || "",
-      createdAt: t.createdAt || null,
-      paymentType:
-        (t.note || "").toLowerCase().includes("reg") ? "Registration" : "Tuition",
-      enteredBy: t.enteredBy || "Admin"
-    };
-  });
+  return {
+    id: String(t._id),
+    studentId: String(t.studentId),
+    studentCode: t.studentCode || student?.studentCode || "",
+    studentName: t.studentName || getFullName(student || {}),
+    className: student?.className || "",
+    amount: Number(t.amount || 0),
+    paymentMode: t.paymentMode || "",
+    note: t.note || "",
+    paymentDate: t.paymentDate || "",
+    createdAt: t.createdAt || null,
+    paymentType: t.paymentType || t.note || "Fee",
+    enteredBy: t.enteredBy || "Admin"
+  };
+});
 
   res.json(rows);
 });
